@@ -9,12 +9,12 @@
 #include "xassert.h"
 
 /* Configure XCORE200 Slicekit TILE 0 Triangle port for SDRAM slice */
-on tile[0] : out buffered port:32 sdram_dq_ah = XS1_PORT_16B;
-on tile[0] : out buffered port:32 sdram_cas = XS1_PORT_1J;
-on tile[0] : out buffered port:32 sdram_ras = XS1_PORT_1I;
-on tile[0] : out buffered port:8 sdram_we = XS1_PORT_1K;
-on tile[0] : out port sdram_clk = XS1_PORT_1L;
-on tile[0] : clock sdram_cb = XS1_CLKBLK_2;
+on tile[2] : out buffered port:32 sdram_dq_ah = XS1_PORT_16B;
+on tile[2] : out buffered port:32 sdram_cas = XS1_PORT_1J;
+on tile[2] : out buffered port:32 sdram_ras = XS1_PORT_1I;
+on tile[2] : out buffered port:8 sdram_we = XS1_PORT_1K;
+on tile[2] : out port sdram_clk = XS1_PORT_1L;
+on tile[2] : clock sdram_cb = XS1_CLKBLK_2;
 
 /* N defines the number of words to write/read in a single burst. */
 #define N (1024)
@@ -22,6 +22,7 @@ on tile[0] : clock sdram_cb = XS1_CLKBLK_2;
 
 void application(streaming chanend c_sdram_server, client interface memory_address_allocator_i i_mem_alloc)
 {
+    debug_printf("Got here!\n");
 
     /* Declare and initialize the SDRAM server task. */
     s_sdram_state sdram_state;
@@ -98,7 +99,7 @@ interface    memory_address_allocator_i mem_alloc_i[1];
     par {
 
         // 256 MB SDRAM
-        on tile[0]:
+        on tile[2]:
     sdram_server(c_sdram, 1, sdram_dq_ah, sdram_cas, sdram_ras, sdram_we,
             sdram_clk, sdram_cb, 2,    //CAS latency
             128,  //Row long words
@@ -111,9 +112,9 @@ interface    memory_address_allocator_i mem_alloc_i[1];
             4)
     ;   //Clock divider
 
-    on tile[0]: application(c_sdram[0], mem_alloc_i[0])
+    on tile[2]: application(c_sdram[0], mem_alloc_i[0])
     ;
-    on tile[0]: memory_address_allocator(1, mem_alloc_i, 0, RAMBYTES)
+    on tile[2]: memory_address_allocator(1, mem_alloc_i, 0, RAMBYTES)
     ;
 }
 

@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>  
 <Network xmlns="http://www.xmos.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.xmos.com http://www.xmos.com">
   <Type>Board</Type>
-  <Name>sliceKIT Core Board (X200)</Name>
+  <Name>Two connected sliceKIT (XC200) Core Boards</Name>
+  
+  <!-- Delaring we have four tiles and two usb tiles -->
   <Declarations>
-    <Declaration>tileref tile[2]</Declaration>
-    <Declaration>tileref usb_tile</Declaration>
+    <Declaration>tileref tile[4]</Declaration>
+    <Declaration>tileref usb_tile[2]</Declaration>
   </Declarations>
+  <!-- Defining the IC packages on the board -->
+  <!-- Two sliceKIT core boards have two XE216-512-FB236-C20 devices -->
   <Packages>
+    <!-- Device #1 -->
     <Package id="0" Type="XS2-EnA-512-FB236">
       <Nodes>
+        <!-- Two xmos tiles, 0 and 1. Oscillator from Node 1 (the usb tile) -->
         <Node Id="0" InPackageId="0" Type="XS2-L16A-512" OscillatorSrc="1" SystemFrequency="500MHz">
           <Boot>
             <Source Location="bootFlash"/>
+            <Bootee NodeId="2"/>
           </Boot>
           <Tile Number="0" Reference="tile[0]">
             <Port Location="XS1_PORT_1B" Name="PORT_SQI_CS"/>
@@ -20,40 +27,79 @@
           </Tile>
           <Tile Number="1" Reference="tile[1]"/>
         </Node>
-        <Node Id="1" InPackageId="1" Type="periph:XS1-SU" Reference="usb_tile" Oscillator="24MHz">
+        <!-- The usb tile -->
+        <Node Id="1" InPackageId="1" Type="periph:XS1-SU" Reference="usb_tile[0]" Oscillator="24MHz">
         </Node>		
       </Nodes>
       <Links>
+        <!-- 5 wire link between tile 0 link 8 (internal only) and usb_tile[0] -->
         <Link Encoding="5wire">
           <LinkEndpoint NodeId="0" Link="8" Delays="52clk,52clk"/>
           <LinkEndpoint NodeId="1" Link="XL0" Delays="1clk,1clk"/>
         </Link>
       </Links> 
    </Package>
+   
+    <!-- Device #2 -->
+   <Package id="1" Type="XS2-EnA-512-FB236">
+      <Nodes>
+        <!-- Two xmos tiles, 2 and 3. Oscillator from Node 3 (the usb tile) -->
+        <Node Id="2" InPackageId="0" Type="XS2-L16A-512" OscillatorSrc="3" SystemFrequency="500MHz">
+          <Boot>
+            <Source Location="LINK" BootMode="6"/>
+          </Boot>
+          <Tile Number="0" Reference="tile[2]"/>
+          <Tile Number="1" Reference="tile[3]"/>
+        </Node>
+        <!-- The usb tile -->
+        <Node Id="3" InPackageId="1" Type="periph:XS1-SU" Reference="usb_tile[1]" Oscillator="24MHz">
+        </Node>
+      </Nodes>
+      <Links>
+        <!-- 5 wire link between tile 2 link 8 (internal only) and usb_tile[1] -->
+        <Link Encoding="5wire">
+          <LinkEndpoint NodeId="2" Link="8" Delays="52clk,52clk"/>
+          <LinkEndpoint NodeId="3" Link="XL0" Delays="1clk,1clk"/>
+        </Link>
+      </Links>
+   </Package>
   </Packages>
+  
+  <!-- XSCOPE Node (XTAG) -->
   <Nodes>
-    <Node Id="2" Type="device:" RoutingId="0x8000">
+    <Node Id="4" Type="device:" RoutingId="0x8000">
       <Service Id="0" Proto="xscope_host_data(chanend c);">
         <Chanend Identifier="c" end="3"/>
       </Service>
     </Node>
   </Nodes>
+  <!-- xCONNECT Links on the board -->
   <Links>
+    <!-- Two 5 wire links between nodes 0 and 2 across the external board to board connector -->
+    <Link Encoding="5wire" Delays="3clk">
+      <LinkEndpoint NodeId="0" Link="6"/>
+      <LinkEndpoint NodeId="2" Link="1"/>
+    </Link>
+    <Link Encoding="5wire" Delays="3clk">
+      <LinkEndpoint NodeId="0" Link="5"/>
+      <LinkEndpoint NodeId="2" Link="2"/>
+    </Link>
+    <!-- Define XSCOPE Link between tile 0 and the XTAG -->
     <Link Encoding="2wire" Delays="5clk" Flags="XSCOPE">
-      <LinkEndpoint NodeId="0" Link="XL1"/>
-      <LinkEndpoint NodeId="2" Chanend="1"/>
+      <LinkEndpoint NodeId="0" Link="1"/> <!-- TILE 0, LINK 1 -->
+      <LinkEndpoint NodeId="4" Chanend="1"/> <!-- XTAG -->
     </Link>
   </Links>
+  <!-- Define QSPI Boot Flash - ISSI IS25LQ032B 32Mb Device -->
   <ExternalDevices>
     <Device NodeId="0" Tile="0" Class="SQIFlash" Name="bootFlash" Type="IS25LQ032B">
       <Attribute Name="PORT_SQI_CS"      Value="PORT_SQI_CS"/>
       <Attribute Name="PORT_SQI_SCLK"    Value="PORT_SQI_SCLK"/>
       <Attribute Name="PORT_SQI_SIO"     Value="PORT_SQI_SIO"/>
-      <Attribute Name="QE_REGISTER" Value="quad_spi_qe_location_status_reg_0"/>
-      <Attribute Name="QE_BIT" Value="quad_spi_qe_bit_6"/>
     </Device>
   </ExternalDevices>
   <JTAGChain>
     <JTAGDevice NodeId="0"/>
+    <JTAGDevice NodeId="2"/>
   </JTAGChain>
 </Network>
